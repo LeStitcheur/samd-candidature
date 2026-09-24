@@ -1,249 +1,100 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cross, LocateFixed, Plus, Minus, RotateCw, MapPin, Layers3, Navigation, LoaderCircle } from 'lucide-react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Cross, LocateFixed, Plus, Minus, MapPin, Navigation, LoaderCircle } from 'lucide-react';
 
-// Coordonnées du centre d'accueil Pillbox : QBCore qb-ambulancejob/config.lua.
-// GTA (x, y, z) → Three.js (x - centreX, z, centreY - y).
-export const PILLBOX = Object.freeze({ x: 308.36, y: -595.25, z: 43.28 });
-
-const RELIEF = 1;
-
-function makeTerrain(metadata, buffer, cutout, borderSource) {
-  const { columns, rows, minX, maxY, step, heightScale } = metadata;
-  const data = new DataView(buffer);
-  const positions = new Float32Array(columns * rows * 3);
-  const uvs = new Float32Array(columns * rows * 2);
-  const indices = new Uint32Array((columns - 1) * (rows - 1) * 6);
-  let cursor = 0;
-  for (let row = 0; row < rows; row++) {
-    for (let column = 0; column < columns; column++) {
-      const index = row * columns + column;
-      let height = data.getUint16(index * 2, true) * heightScale;
-      const x = minX + column * step;
-      const y = maxY - row * step;
-      // Raccord exact avec le maillage extérieur pour éviter les fissures.
-      if (borderSource && (row === 0 || column === 0 || row === rows - 1 || column === columns - 1)) {
-        const { metadata: coarse, data: source } = borderSource;
-        const gx = (x - coarse.minX) / coarse.step;
-        const gy = (coarse.maxY - y) / coarse.step;
-        const cx = Math.floor(gx), cy = Math.floor(gy);
-        const read = (dx, dy) => source.getUint16(((cy + dy) * coarse.columns + cx + dx) * 2, true) * coarse.heightScale;
-        height = THREE.MathUtils.lerp(THREE.MathUtils.lerp(read(0, 0), read(1, 0), gx - cx), THREE.MathUtils.lerp(read(0, 1), read(1, 1), gx - cx), gy - cy);
-      }
-      positions[index * 3] = x - PILLBOX.x;
-      positions[index * 3 + 1] = height * RELIEF;
-      positions[index * 3 + 2] = PILLBOX.y - y;
-      // Projection des tuiles satellites GTA, zoom 5, origine tuile (12, 20).
-      uvs[index * 2] = ((0.02072 * x + 117.3) * 32 - 3072) / 1792;
-      uvs[index * 2 + 1] = 1 - ((-0.0205 * y + 172.8) * 32 - 5120) / 1536;
-      if (row < rows - 1 && column < columns - 1 && !(cutout && x >= cutout.minX && x < cutout.maxX && y <= cutout.maxY && y > cutout.minY)) {
-        indices.set([index, index + columns, index + 1, index + 1, index + columns, index + columns + 1], cursor);
-        cursor += 6;
-      }
-    }
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-  geometry.setIndex(new THREE.BufferAttribute(indices.subarray(0, cursor), 1));
-  geometry.computeVertexNormals();
-  return geometry;
-}
+// Projection des tuiles GTA, zoom 5, origine (12, 20).
+const PILLBOX = { x: (0.02072 * 308.36 + 117.3) * 32 - 3072, y: (-0.0205 * -595.25 + 172.8) * 32 - 5120 };
 
 export default function PillboxMap() {
-  const host = useRef(null);
-  const label = useRef(null);
-  const compass = useRef(null);
-  const controlsApi = useRef(null);
+  const host = useRef(null), canvas = useRef(null), marker = useRef(null), api = useRef(null);
   const [status, setStatus] = useState('loading');
-  const [planView, setPlanView] = useState(false);
-
+  const [limits, setLimits] = useState({ min: false, max: false });
   useEffect(() => {
-    const element = host.current;
-    const controller = new AbortController();
-    let disposed = false;
-    let renderer, controls, resizeObserver, visibilityObserver;
-    let scene, satellite;
-    let frame = 0;
-    let viewVisible = true;
-    const timeout = setTimeout(() => { controller.abort(); if (!disposed) setStatus('error'); }, 20000);
-
-    async function init() {
-      try {
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
-        renderer.setClearColor('#202927');
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFShadowMap;
-        renderer.domElement.setAttribute('aria-label', 'Carte 3D de Pillbox Hill : faites glisser pour tourner. Utilisez les boutons pour zoomer ou recentrer.');
-        renderer.domElement.setAttribute('role', 'img');
-        element.appendChild(renderer.domElement);
-        renderer.domElement.addEventListener('webglcontextlost', event => { event.preventDefault(); if (!disposed) setStatus('error'); });
-        const [metadataResponse, dataResponse, detailResponse, detailDataResponse] = await Promise.all([
-          fetch('/map/terrain.json', { signal: controller.signal }),
-          fetch('/map/pillbox-heights.bin', { signal: controller.signal }),
-          fetch('/map/detail.json', { signal: controller.signal }),
-          fetch('/map/pillbox-detail.bin', { signal: controller.signal }),
-        ]);
-        if (!metadataResponse.ok || !dataResponse.ok || !detailResponse.ok || !detailDataResponse.ok) throw new Error('Carte indisponible');
-        const [metadata, buffer, detail, detailBuffer] = await Promise.all([metadataResponse.json(), dataResponse.arrayBuffer(), detailResponse.json(), detailDataResponse.arrayBuffer()]);
-        if (disposed) return;
-        if (buffer.byteLength !== metadata.columns * metadata.rows * 2 || detailBuffer.byteLength !== detail.columns * detail.rows * 2) throw new Error('Données de carte incomplètes');
-        satellite = await new THREE.TextureLoader().loadAsync('/map/pillbox-satellite.jpg');
-        if (disposed) { satellite.dispose(); return; }
-        satellite.colorSpace = THREE.SRGBColorSpace;
-        satellite.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-        clearTimeout(timeout);
-
-        scene = new THREE.Scene();
-        scene.fog = new THREE.Fog('#202927', 1200, 2700);
-        const camera = new THREE.PerspectiveCamera(43, 1, 1, 5000);
-        const baseTarget = new THREE.Vector3(0, 65, 0);
-        const basePosition = new THREE.Vector3(340, 365, 420);
-        camera.position.copy(basePosition);
-        scene.add(new THREE.HemisphereLight('#dbeaff', '#807364', 1.5));
-        const sun = new THREE.DirectionalLight('#fff0d5', 2.5);
-        sun.position.set(-450, 750, 280);
-        sun.castShadow = true;
-        sun.shadow.mapSize.set(2048, 2048);
-        Object.assign(sun.shadow.camera, { left: -850, right: 850, top: 850, bottom: -850, near: 10, far: 2400 });
-        sun.shadow.normalBias = 1.3;
-        sun.shadow.bias = -0.00015;
-        scene.add(sun);
-        const material = new THREE.MeshStandardMaterial({ map: satellite, roughness: 0.95, metalness: 0, flatShading: true });
-        const terrain = new THREE.Mesh(makeTerrain(metadata, buffer, detail), material);
-        const detailedTerrain = new THREE.Mesh(makeTerrain(detail, detailBuffer, null, { metadata, data: new DataView(buffer) }), material);
-        for (const mesh of [terrain, detailedTerrain]) { mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh); }
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(7000, 7000), new THREE.MeshBasicMaterial({ color: '#202927' }));
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -3;
-        scene.add(ground);
-
-        // Le repère se trouve exactement au-dessus des coordonnées d'accueil.
-        const row = Math.round((detail.maxY - PILLBOX.y) / detail.step);
-        const column = Math.round((PILLBOX.x - detail.minX) / detail.step);
-        const groundHeight = new DataView(detailBuffer).getUint16((row * detail.columns + column) * 2, true) * detail.heightScale * RELIEF;
-        const markerTop = groundHeight + 85;
-        const stem = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 85, 10), new THREE.MeshBasicMaterial({ color: '#ff9890' }));
-        stem.position.set(0, groundHeight + 42.5, 0);
-        scene.add(stem);
-        const ring = new THREE.Mesh(new THREE.RingGeometry(10, 14, 48), new THREE.MeshBasicMaterial({ color: '#f97c71', side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthTest: false }));
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.set(0, groundHeight + 2, 0);
-        ring.renderOrder = 5;
-        scene.add(ring);
-        const beacon = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8), new THREE.MeshBasicMaterial({ color: '#ffc8c0' }));
-        beacon.position.set(0, markerTop, 0);
-        scene.add(beacon);
-
-        controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.copy(baseTarget);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.1;
-        controls.minDistance = 220;
-        controls.maxDistance = 1600;
-        controls.maxPolarAngle = Math.PI / 2.3;
-        controls.minPolarAngle = 0.02;
-        controls.enablePan = true;
-        controls.screenSpacePanning = false;
-        controls.rotateSpeed = 0.65;
-        controls.zoomSpeed = 0.7;
-        controls.update();
-
-        function recenter(topDown = false) {
-          controls.target.copy(baseTarget);
-          camera.position.copy(topDown ? new THREE.Vector3(0, 830, 1) : basePosition);
-          controls.enableRotate = !topDown;
-          controls.update();
-          render();
-        }
-        controlsApi.current = {
-          reset: () => recenter(false),
-          plan: value => recenter(value),
-          zoom: direction => {
-            const offset = camera.position.clone().sub(controls.target);
-            offset.setLength(THREE.MathUtils.clamp(offset.length() * direction, controls.minDistance, controls.maxDistance));
-            camera.position.copy(controls.target).add(offset);
-            controls.update(); render();
-          },
-          rotate: () => { const offset = camera.position.clone().sub(controls.target); offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 6); camera.position.copy(controls.target).add(offset); controls.update(); render(); },
-        };
-
-        const projected = new THREE.Vector3();
-        const markerPoint = new THREE.Vector3(0, markerTop + 7, 0);
-        function render() {
-          if (disposed) return;
-          // Évite qu'un déplacement ne sorte de la zone de données disponible.
-          const previousTarget = controls.target.clone();
-          controls.target.x = THREE.MathUtils.clamp(controls.target.x, -650, 650);
-          controls.target.z = THREE.MathUtils.clamp(controls.target.z, -650, 650);
-          controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 150);
-          camera.position.add(controls.target.clone().sub(previousTarget));
-          renderer.render(scene, camera);
-          // Soleil et géométrie fixes : les ombres ne sont calculées qu’une fois.
-          renderer.shadowMap.autoUpdate = false;
-          if (compass.current) {
-            const origin = controls.target.clone().project(camera);
-            const north = controls.target.clone().add(new THREE.Vector3(0, 0, -150)).project(camera);
-            const angle = Math.atan2((north.x - origin.x) * element.clientWidth, (north.y - origin.y) * element.clientHeight) * 180 / Math.PI;
-            compass.current.style.transform = `rotate(${angle - 45}deg)`;
-          }
-          projected.copy(markerPoint).project(camera);
-          if (label.current) {
-            label.current.style.left = `${(projected.x * 0.5 + 0.5) * element.clientWidth}px`;
-            label.current.style.top = `${(-projected.y * 0.5 + 0.5) * element.clientHeight}px`;
-            label.current.style.visibility = projected.z > 1 || Math.abs(projected.x) > 0.95 || Math.abs(projected.y) > 0.95 ? 'hidden' : 'visible';
-          }
-        }
-        function animate() { if (disposed) return; frame = requestAnimationFrame(animate); if (viewVisible) { controls.update(); } }
-        controls.addEventListener('change', render);
-        resizeObserver = new ResizeObserver(() => { if (disposed) return; const { clientWidth: width, clientHeight: height } = element; if (!width || !height) return; renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix(); render(); });
-        resizeObserver.observe(element);
-        visibilityObserver = new IntersectionObserver(entries => { viewVisible = entries[0].isIntersecting; });
-        visibilityObserver.observe(element);
-        setStatus('ready');
-        render();
-        animate();
-      } catch (error) {
-        if (!disposed) { setStatus('error'); console.warn('Carte 3D indisponible :', error.message); }
-      }
+    const element = host.current, surface = canvas.current;
+    const context = surface.getContext('2d');
+    const picture = new Image();
+    let disposed = false, width = 0, height = 0, ratio = 1, scale = 0.5;
+    let center = { ...PILLBOX }, ready = false, initialized = false;
+    const pointers = new Map();
+    let gesture = null;
+    if (!context) { setStatus('error'); return; }
+    function bounds() {
+      // Pas de suragrandissement : un pixel source au maximum par pixel écran.
+      const min = Math.max(width / picture.width, height / picture.height);
+      return { min, max: Math.max(min, 1 / ratio) };
     }
-    init();
-    return () => {
-      disposed = true;
-      clearTimeout(timeout);
-      controller.abort();
-      cancelAnimationFrame(frame);
-      resizeObserver?.disconnect();
-      visibilityObserver?.disconnect();
-      controls?.dispose();
-      controlsApi.current = null;
-      scene?.traverse(object => { object.geometry?.dispose(); if (Array.isArray(object.material)) object.material.forEach(material => material.dispose()); else object.material?.dispose(); });
-      satellite?.dispose();
-      renderer?.dispose();
-      renderer?.domElement.remove();
-    };
+    function render() {
+      if (!ready || disposed || !width || !height) return;
+      const { min, max } = bounds();
+      scale = Math.min(max, Math.max(min, scale));
+      center.x = Math.max(width / (2 * scale), Math.min(picture.width - width / (2 * scale), center.x));
+      center.y = Math.max(height / (2 * scale), Math.min(picture.height - height / (2 * scale), center.y));
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(picture, width / 2 - center.x * scale, height / 2 - center.y * scale, picture.width * scale, picture.height * scale);
+      const x = width / 2 + (PILLBOX.x - center.x) * scale, y = height / 2 + (PILLBOX.y - center.y) * scale;
+      marker.current.style.left = `${x}px`; marker.current.style.top = `${y}px`;
+      marker.current.style.visibility = x < 0 || x > width || y < 0 || y > height ? 'hidden' : 'visible';
+      setLimits(previous => { const next = { min: scale <= min + .001, max: scale >= max - .001 }; return previous.min === next.min && previous.max === next.max ? previous : next; });
+    }
+    function reset() { if (!ready) return; center = { ...PILLBOX }; scale = bounds().max * .78; render(); }
+    function zoom(factor, x = width / 2, y = height / 2) {
+      if (!ready) return;
+      const before = scale, { min, max } = bounds(); scale = Math.min(max, Math.max(min, scale * factor));
+      center.x += (x - width / 2) * (1 / before - 1 / scale);
+      center.y += (y - height / 2) * (1 / before - 1 / scale); render();
+    }
+    function wheel(event) { event.preventDefault(); const r = surface.getBoundingClientRect(); zoom(Math.exp(-event.deltaY * .002), event.clientX - r.left, event.clientY - r.top); }
+    function startGesture() {
+      const points = [...pointers.values()];
+      if (!points.length) { gesture = null; return; }
+      gesture = { x: points.reduce((n,p)=>n+p.x,0)/points.length, y: points.reduce((n,p)=>n+p.y,0)/points.length, distance: points.length > 1 ? Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y) : 0 };
+    }
+    function down(event) { if (event.button !== 0) return; surface.focus({ preventScroll: true }); surface.setPointerCapture(event.pointerId); pointers.set(event.pointerId,{x:event.clientX,y:event.clientY}); startGesture(); }
+    function move(event) {
+      if (!pointers.has(event.pointerId) || !ready) return;
+      const previous = gesture; pointers.set(event.pointerId,{x:event.clientX,y:event.clientY}); startGesture();
+      center.x -= (gesture.x-previous.x)/scale; center.y -= (gesture.y-previous.y)/scale;
+      if (gesture.distance && previous.distance) { const r=surface.getBoundingClientRect(); zoom(gesture.distance/previous.distance,gesture.x-r.left,gesture.y-r.top); } else render();
+    }
+    function up(event) { pointers.delete(event.pointerId); startGesture(); }
+    function key(event) {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-','Home'].includes(event.key)) event.preventDefault(); else return;
+      if (event.key === 'Home') return reset();
+      if (event.key === '+' || event.key === '=') return zoom(1.25);
+      if (event.key === '-') return zoom(.8);
+      center.x += ({ArrowLeft:-60,ArrowRight:60}[event.key] || 0)/scale;
+      center.y += ({ArrowUp:-60,ArrowDown:60}[event.key] || 0)/scale; render();
+    }
+    const observer = new ResizeObserver(() => {
+      width = element.clientWidth; height = element.clientHeight; ratio = window.devicePixelRatio || 1;
+      surface.width = Math.round(width * ratio); surface.height = Math.round(height * ratio);
+      if (ready && !initialized) { initialized = true; reset(); } else render();
+    });
+    observer.observe(element);
+    const listeners = { pointerdown:down, pointermove:move, pointerup:up, pointercancel:up, lostpointercapture:up, keydown:key };
+    Object.entries(listeners).forEach(([name,fn])=>surface.addEventListener(name,fn));
+    surface.addEventListener('wheel',wheel,{passive:false});
+    picture.onload = () => { if (disposed) return; ready = true; setStatus('ready'); if (width) { initialized = true; reset(); } };
+    picture.onerror = () => { if (!disposed) setStatus('error'); };
+    picture.src = '/map/pillbox-satellite.png';
+    api.current = { reset, zoom };
+    return () => { disposed = true; observer.disconnect(); picture.onload = null; picture.onerror = null; api.current = null; Object.entries(listeners).forEach(([name,fn])=>surface.removeEventListener(name,fn)); surface.removeEventListener('wheel',wheel); };
   }, []);
-
   const ready = status === 'ready';
-  function reset() { controlsApi.current?.reset(); setPlanView(false); }
-  return <div className="pillbox-map">
-    <div className="map-topbar"><span><span className="map-status-dot"/>PILLBOX HILL</span><span className="map-mode"><Layers3 size={13}/>{planView ? 'VUE DU DESSUS' : 'RELIEF 3D'}</span></div>
-    <div className="map-viewport">
-      <div className="map-canvas" ref={host}/>
-      <div className="map-marker" ref={label} hidden={!ready}><span className="map-marker-icon"><Cross size={16}/></span><span>Pillbox Hill<strong>SAMD · L’hôpital</strong></span></div>
-      {status === 'loading' && <div className="map-state" role="status"><LoaderCircle className="spin" size={27}/><span>Chargement de Pillbox Hill…</span></div>}
-      {status === 'error' && <div className="map-state map-error" role="status"><MapPin size={27}/><strong>Pillbox Hill Medical Center</strong><p>La vue 3D nécessite un navigateur avec WebGL actif. La capture de l’hôpital reste disponible à côté.</p><span>X 308.36 · Y −595.25 · Z 43.28</span></div>}
-      <div className="map-navigation"><button title="Recentrer sur Pillbox Hill" aria-label="Recentrer sur Pillbox Hill" onClick={reset} disabled={!ready}><LocateFixed size={18}/></button><button title="Zoomer" aria-label="Zoomer sur la carte" onClick={()=>controlsApi.current?.zoom(0.78)} disabled={!ready}><Plus size={19}/></button><button title="Dézoomer" aria-label="Dézoomer sur la carte" onClick={()=>controlsApi.current?.zoom(1.28)} disabled={!ready}><Minus size={19}/></button><button title="Tourner la carte" aria-label="Tourner la carte" onClick={()=>controlsApi.current?.rotate()} disabled={!ready || planView}><RotateCw size={17}/></button></div>
-      <div className="map-orientation" aria-label="Direction du nord"><Navigation ref={compass} size={17}/><span>N</span></div>
-      <button className="map-view-switch" aria-pressed={planView} disabled={!ready} onClick={()=>{setPlanView(!planView);controlsApi.current?.plan(!planView);}}>{planView ? 'Vue en perspective' : 'Vue du dessus'}</button>
+  return <div className="pillbox-map satellite-map">
+    <div className="map-topbar"><span><span className="map-status-dot"/>PILLBOX HILL</span><span className="map-mode">VUE SATELLITE</span></div>
+    <div className="map-viewport" ref={host}>
+      <canvas ref={canvas} className="satellite-canvas" tabIndex="0" role="img" aria-label="Carte satellite GTA de Pillbox Hill. Glisser pour déplacer, pincer ou utiliser les boutons pour zoomer. Au clavier : flèches, plus, moins et touche Début pour recentrer."/>
+      <div className="map-marker satellite-marker" ref={marker} hidden={!ready}><span className="map-marker-icon"><Cross size={16}/></span><span>Pillbox Hill<strong>SAMD · L’hôpital</strong></span></div>
+      {status === 'loading' && <div className="map-state" role="status"><LoaderCircle className="spin" size={27}/>Chargement de la carte…</div>}
+      {status === 'error' && <div className="map-state" role="status"><MapPin/><strong>Carte indisponible</strong><p>La capture de Pillbox reste disponible à côté.</p></div>}
+      <div className="map-navigation"><button aria-label="Recentrer sur Pillbox Hill" title="Recentrer sur Pillbox Hill" disabled={!ready} onClick={()=>api.current?.reset()}><LocateFixed size={18}/></button><button aria-label="Zoomer sur la carte" title={limits.max ? 'Résolution maximale atteinte' : 'Zoomer'} disabled={!ready || limits.max} onClick={()=>api.current?.zoom(1.25)}><Plus size={19}/></button><button aria-label="Dézoomer sur la carte" title="Dézoomer" disabled={!ready || limits.min} onClick={()=>api.current?.zoom(.8)}><Minus size={19}/></button></div>
+      <div className="map-orientation"><Navigation size={17} style={{transform:'rotate(-45deg)'}}/><span>N</span></div>
+      <span className="satellite-quality">{limits.max ? 'Netteté maximale' : 'Satellite GTA V'}</span>
     </div>
-    <div className="map-caption"><span>Glisser pour tourner · Molette pour zoomer</span><button onClick={reset} disabled={!ready}>Pillbox <LocateFixed size={13}/></button></div>
-    <div className="map-source">Satellite GTA V · Reconstruction approximative du relief · <a href="https://github.com/Andreas1331/ragemp-gtav-heightmap" target="_blank" rel="noreferrer">Andreas1331</a> · <a href="https://github.com/Trusted-Studios/mapStyles" target="_blank" rel="noreferrer">Textures</a></div>
+    <div className="map-caption"><span>Glisser pour déplacer · Pincer ou ± pour zoomer</span><button onClick={()=>api.current?.reset()} disabled={!ready}>Pillbox <LocateFixed size={13}/></button></div>
+    <div className="map-source">GTA V / Rockstar Games · <a href="https://github.com/Trusted-Studios/mapStyles" target="_blank" rel="noreferrer">Fond satellite</a></div>
   </div>;
 }
-
