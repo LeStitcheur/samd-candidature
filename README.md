@@ -26,7 +26,7 @@ Le build statique est généré dans `dist/`, publiable sur un hébergement stat
 
 - `src/App.jsx` : chapitres React, navigation, profils, organigramme, engagements et horizons.
 - `src/components/Tabs.jsx` : onglets avec navigation au clavier.
-- `src/components/PillboxMap.jsx` : scène Three.js, repère de l’hôpital, caméra et contrôles.
+- `src/components/PillboxMap.jsx` : carte satellite Canvas 2D, repère de l’hôpital et contrôles.
 - `src/content.js` : informations RP/HRP, hiérarchie, changements et objectifs.
 - `src/styles.css` : design, palette et responsive. Fond principal **#292929**, bordeaux **#830705**.
 - `public/assets/samd-logo.png` : logo fourni, utilisé dans l’en-tête, le pied de page et comme favicon.
@@ -34,21 +34,11 @@ Le build statique est généré dans `dist/`, publiable sur un hébergement stat
 - `public/map/` : données locales de relief GTA V et licence MIT.
 - `scripts/prepare-terrain.mjs` : script facultatif de régénération du relief.
 
-## Carte 3D ciblée sur Pillbox Hill
+## Carte satellite ciblée sur Pillbox Hill
 
-La carte est rendue localement en **Three.js**, sans iframe Sketchfab ni clé API. Elle charge seulement lorsque sa section approche de l’écran. La caméra et le repère visent l’accueil de Pillbox : **X 308.36, Y −595.25, Z 43.28**, coordonnées de référence de [QBCore](https://github.com/qbcore-framework/qb-ambulancejob/blob/main/config.lua).
+La carte utilise un canvas 2D adapté à la densité de pixels de l’écran. Les tuiles satellites GTA sont assemblées en PNG sans recompression supplémentaire. Le repère vise X 308.36, Y −595.25, selon la projection GTA des tuiles. Aucun relief artificiel ni façade inventée.
 
-Le relief représente une zone de **2,2 × 2,2 km**, reconstruite à partir des altitudes publiques de GTA V, échantillonnées tous les 5 mètres. Les bâtiments sont donc simplifiés, sans intérieurs ni textures du mapping Alynia RP. Le repère reste rattaché aux coordonnées de l’hôpital pendant la rotation et le zoom. Le bouton de recentrage rétablit la caméra initiale ; une vue du dessus est également disponible.
-
-Commandes : glisser pour tourner, clic droit pour déplacer, molette/pincement pour zoomer, boutons pour zoomer, tourner et recentrer. Les commandes principales sont accessibles au clavier. En cas d’indisponibilité WebGL, un message localisé et les coordonnées sont affichés ; la capture de l’hôpital reste accessible.
-
-Les données embarquées font environ **389 Ko**. Il n’est pas nécessaire de télécharger la carte complète ni de lancer le script de préparation pour utiliser le projet. Pour les régénérer :
-
-```sh
-node scripts/prepare-terrain.mjs
-```
-
-Ce script récupère une tranche d’environ 74 Mo du fichier source avec une requête HTTP Range, puis en extrait le relief local. La licence est conservée dans `public/map/LICENSE.txt`.
+Glisser pour déplacer, pincer ou utiliser la molette et les boutons pour zoomer. Au clavier : flèches, +/−, Début pour recentrer. Le zoom est plafonné à la résolution source pour éviter le suragrandissement. Sur les grands écrans à très haute densité, le cadrage minimal nécessaire pour remplir la carte reste prioritaire. La carte charge à l’approche de la section ; aucun service cartographique distant n’est nécessaire à l’exécution.
 
 ## Contenu
 
@@ -84,11 +74,6 @@ La commande s’écrit **sans `/` devant npm**. Elle vérifie la branche et le d
 
 Après connexion initiale, Vercel déploie automatiquement chaque nouveau commit de `main`. Le succès du push ne garantit pas celui du build distant : vérifier le statut dans Vercel. Sans changement ni commit en attente, aucun nouveau déploiement n’est déclenché. Aucun token Vercel n’est enregistré dans le projet.
 
-Texture satellite : [Trusted-Studios/mapStyles](https://github.com/Trusted-Studios/mapStyles), tuiles `styleSatelite/5/{x}/{y}.jpg`, colonnes 12–18, lignes 20–25. Projection GTA : x = (0.02072 × X + 117.3) × 32, y = (−0.0205 × Y + 172.8) × 32. La texture est projetée sur le relief ; les façades restent simplifiées.
+Texture satellite : [Trusted-Studios/mapStyles](https://github.com/Trusted-Studios/mapStyles), tuiles `styleSatelite/5/{x}/{y}.jpg`, colonnes 12–18, lignes 20–25. Projection GTA : x = (0.02072 × X + 117.3) × 32, y = (−0.0205 × Y + 172.8) × 32. Assemblage PNG à la résolution native, affiché à plat.
 
 
-### Relief détaillé de Pillbox
-
-Le kilomètre carré autour de Pillbox dispose d’un maillage à 2 mètres, raccordé au relief extérieur à 5 mètres. Les altitudes sont conservées à leur échelle réelle. Les façades procédurales ont été retirées. Ce maillage d’altitudes avec texture satellite reste une reconstruction approximative : il ne contient ni les façades exactes, ni les surplombs, ni les modèles 3D du jeu. Une reproduction fidèle exige les modèles et leurs textures. Les données détaillées ajoutent environ 502 Ko ; les ombres statiques sont calculées une seule fois.
-
-Régénération facultative : `node scripts/prepare-terrain.mjs --detail`.
