@@ -86,3 +86,9 @@ Après connexion initiale, Vercel déploie automatiquement chaque nouveau commit
 
 Texture satellite : [Trusted-Studios/mapStyles](https://github.com/Trusted-Studios/mapStyles), tuiles `styleSatelite/5/{x}/{y}.jpg`, colonnes 12–18, lignes 20–25. Projection GTA : x = (0.02072 × X + 117.3) × 32, y = (−0.0205 × Y + 172.8) × 32. La texture est projetée sur le relief ; les façades restent simplifiées.
 
+
+### Relief détaillé de Pillbox
+
+Le kilomètre carré autour de Pillbox dispose d’un maillage à 2 mètres, raccordé au relief extérieur à 5 mètres. Les altitudes sont conservées à leur échelle réelle. Les façades procédurales ont été retirées. Ce maillage d’altitudes avec texture satellite reste une reconstruction approximative : il ne contient ni les façades exactes, ni les surplombs, ni les modèles 3D du jeu. Une reproduction fidèle exige les modèles et leurs textures. Les données détaillées ajoutent environ 502 Ko ; les ombres statiques sont calculées une seule fois.
+
+Régénération facultative : `node scripts/prepare-terrain.mjs --detail`.

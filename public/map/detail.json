@@ -1,0 +1,14 @@
+{
+  "minX": -200,
+  "maxX": 800,
+  "minY": -1100,
+  "maxY": -100,
+  "step": 2,
+  "columns": 501,
+  "rows": 501,
+  "encoding": "uint16-le",
+  "heightScale": 0.1,
+  "source": "https://media.githubusercontent.com/media/Andreas1331/ragemp-gtav-heightmap/main/data_file/GTAV_HeightMap_Data.data",
+  "license": "MIT",
+  "attribution": "Copyright (c) 2022 -Andreas"
+}

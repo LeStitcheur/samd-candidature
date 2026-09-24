@@ -3,7 +3,8 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 
 const source = 'https://media.githubusercontent.com/media/Andreas1331/ragemp-gtav-heightmap/main/data_file/GTAV_HeightMap_Data.data';
-const bounds = { minX: -800, maxX: 1400, minY: -1700, maxY: 500, step: 5 };
+const detail = process.argv.includes('--detail');
+const bounds = detail ? { minX: -200, maxX: 800, minY: -1100, maxY: -100, step: 2 } : { minX: -800, maxX: 1400, minY: -1700, maxY: 500, step: 5 };
 const sourceWidth = 8400;
 const firstByte = (bounds.minY + 4300) * sourceWidth * 4;
 const lastByte = ((bounds.maxY + 4300 + 1) * sourceWidth * 4) - 1;
@@ -27,6 +28,6 @@ for (let row = 0; row < rows; row++) {
   }
 }
 await mkdir('public/map', { recursive: true });
-await writeFile('public/map/pillbox-heights.bin', Buffer.from(heights.buffer));
-await writeFile('public/map/terrain.json', JSON.stringify({ ...bounds, columns, rows, encoding:'uint16-le', heightScale:0.1, source, license:'MIT', attribution:'Copyright (c) 2022 -Andreas' }, null, 2));
+await writeFile(`public/map/${detail ? 'pillbox-detail' : 'pillbox-heights'}.bin`, Buffer.from(heights.buffer));
+await writeFile(`public/map/${detail ? 'detail' : 'terrain'}.json`, JSON.stringify({ ...bounds, columns, rows, encoding:'uint16-le', heightScale:0.1, source, license:'MIT', attribution:'Copyright (c) 2022 -Andreas' }, null, 2));
 console.log(JSON.stringify({ samples: heights.length, bytes: heights.byteLength, bounds }));

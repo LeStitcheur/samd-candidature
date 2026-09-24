@@ -7,7 +7,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // GTA (x, y, z) → Three.js (x - centreX, z, centreY - y).
 export const PILLBOX = Object.freeze({ x: 308.36, y: -595.25, z: 43.28 });
 
-function makeTerrain(metadata, buffer) {
+const RELIEF = 1;
+
+function makeTerrain(metadata, buffer, cutout, borderSource) {
   const { columns, rows, minX, maxY, step, heightScale } = metadata;
   const data = new DataView(buffer);
   const positions = new Float32Array(columns * rows * 3);
@@ -17,16 +19,25 @@ function makeTerrain(metadata, buffer) {
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
       const index = row * columns + column;
-      const height = data.getUint16(index * 2, true) * heightScale;
+      let height = data.getUint16(index * 2, true) * heightScale;
       const x = minX + column * step;
       const y = maxY - row * step;
+      // Raccord exact avec le maillage extérieur pour éviter les fissures.
+      if (borderSource && (row === 0 || column === 0 || row === rows - 1 || column === columns - 1)) {
+        const { metadata: coarse, data: source } = borderSource;
+        const gx = (x - coarse.minX) / coarse.step;
+        const gy = (coarse.maxY - y) / coarse.step;
+        const cx = Math.floor(gx), cy = Math.floor(gy);
+        const read = (dx, dy) => source.getUint16(((cy + dy) * coarse.columns + cx + dx) * 2, true) * coarse.heightScale;
+        height = THREE.MathUtils.lerp(THREE.MathUtils.lerp(read(0, 0), read(1, 0), gx - cx), THREE.MathUtils.lerp(read(0, 1), read(1, 1), gx - cx), gy - cy);
+      }
       positions[index * 3] = x - PILLBOX.x;
-      positions[index * 3 + 1] = height;
+      positions[index * 3 + 1] = height * RELIEF;
       positions[index * 3 + 2] = PILLBOX.y - y;
       // Projection des tuiles satellites GTA, zoom 5, origine tuile (12, 20).
       uvs[index * 2] = ((0.02072 * x + 117.3) * 32 - 3072) / 1792;
       uvs[index * 2 + 1] = 1 - ((-0.0205 * y + 172.8) * 32 - 5120) / 1536;
-      if (row < rows - 1 && column < columns - 1) {
+      if (row < rows - 1 && column < columns - 1 && !(cutout && x >= cutout.minX && x < cutout.maxX && y <= cutout.maxY && y > cutout.minY)) {
         indices.set([index, index + columns, index + 1, index + 1, index + columns, index + columns + 1], cursor);
         cursor += 6;
       }
@@ -35,7 +46,7 @@ function makeTerrain(metadata, buffer) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  geometry.setIndex(new THREE.BufferAttribute(indices.subarray(0, cursor), 1));
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -64,18 +75,24 @@ export default function PillboxMap() {
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
         renderer.setClearColor('#202927');
         renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         renderer.domElement.setAttribute('aria-label', 'Carte 3D de Pillbox Hill : faites glisser pour tourner. Utilisez les boutons pour zoomer ou recentrer.');
         renderer.domElement.setAttribute('role', 'img');
         element.appendChild(renderer.domElement);
         renderer.domElement.addEventListener('webglcontextlost', event => { event.preventDefault(); if (!disposed) setStatus('error'); });
-        const [metadataResponse, dataResponse] = await Promise.all([
+        const [metadataResponse, dataResponse, detailResponse, detailDataResponse] = await Promise.all([
           fetch('/map/terrain.json', { signal: controller.signal }),
           fetch('/map/pillbox-heights.bin', { signal: controller.signal }),
+          fetch('/map/detail.json', { signal: controller.signal }),
+          fetch('/map/pillbox-detail.bin', { signal: controller.signal }),
         ]);
-        if (!metadataResponse.ok || !dataResponse.ok) throw new Error('Carte indisponible');
-        const [metadata, buffer] = await Promise.all([metadataResponse.json(), dataResponse.arrayBuffer()]);
+        if (!metadataResponse.ok || !dataResponse.ok || !detailResponse.ok || !detailDataResponse.ok) throw new Error('Carte indisponible');
+        const [metadata, buffer, detail, detailBuffer] = await Promise.all([metadataResponse.json(), dataResponse.arrayBuffer(), detailResponse.json(), detailDataResponse.arrayBuffer()]);
         if (disposed) return;
-        if (buffer.byteLength !== metadata.columns * metadata.rows * 2) throw new Error('Données de carte incomplètes');
+        if (buffer.byteLength !== metadata.columns * metadata.rows * 2 || detailBuffer.byteLength !== detail.columns * detail.rows * 2) throw new Error('Données de carte incomplètes');
         satellite = await new THREE.TextureLoader().loadAsync('/map/pillbox-satellite.jpg');
         if (disposed) { satellite.dispose(); return; }
         satellite.colorSpace = THREE.SRGBColorSpace;
@@ -85,24 +102,31 @@ export default function PillboxMap() {
         scene = new THREE.Scene();
         scene.fog = new THREE.Fog('#202927', 1200, 2700);
         const camera = new THREE.PerspectiveCamera(43, 1, 1, 5000);
-        const baseTarget = new THREE.Vector3(0, 50, 0);
-        const basePosition = new THREE.Vector3(360, 470, 450);
+        const baseTarget = new THREE.Vector3(0, 65, 0);
+        const basePosition = new THREE.Vector3(340, 365, 420);
         camera.position.copy(basePosition);
-        scene.add(new THREE.HemisphereLight('#ffffff', '#68706a', 1.8));
-        const sun = new THREE.DirectionalLight('#fff3df', 1.3);
-        sun.position.set(-600, 900, 400);
+        scene.add(new THREE.HemisphereLight('#dbeaff', '#807364', 1.5));
+        const sun = new THREE.DirectionalLight('#fff0d5', 2.5);
+        sun.position.set(-450, 750, 280);
+        sun.castShadow = true;
+        sun.shadow.mapSize.set(2048, 2048);
+        Object.assign(sun.shadow.camera, { left: -850, right: 850, top: 850, bottom: -850, near: 10, far: 2400 });
+        sun.shadow.normalBias = 1.3;
+        sun.shadow.bias = -0.00015;
         scene.add(sun);
-        const terrain = new THREE.Mesh(makeTerrain(metadata, buffer), new THREE.MeshStandardMaterial({ map: satellite, roughness: 1, metalness: 0, flatShading: true }));
-        scene.add(terrain);
+        const material = new THREE.MeshStandardMaterial({ map: satellite, roughness: 0.95, metalness: 0, flatShading: true });
+        const terrain = new THREE.Mesh(makeTerrain(metadata, buffer, detail), material);
+        const detailedTerrain = new THREE.Mesh(makeTerrain(detail, detailBuffer, null, { metadata, data: new DataView(buffer) }), material);
+        for (const mesh of [terrain, detailedTerrain]) { mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh); }
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(7000, 7000), new THREE.MeshBasicMaterial({ color: '#202927' }));
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -3;
         scene.add(ground);
 
         // Le repère se trouve exactement au-dessus des coordonnées d'accueil.
-        const row = Math.round((metadata.maxY - PILLBOX.y) / metadata.step);
-        const column = Math.round((PILLBOX.x - metadata.minX) / metadata.step);
-        const groundHeight = new DataView(buffer).getUint16((row * metadata.columns + column) * 2, true) * metadata.heightScale;
+        const row = Math.round((detail.maxY - PILLBOX.y) / detail.step);
+        const column = Math.round((PILLBOX.x - detail.minX) / detail.step);
+        const groundHeight = new DataView(detailBuffer).getUint16((row * detail.columns + column) * 2, true) * detail.heightScale * RELIEF;
         const markerTop = groundHeight + 85;
         const stem = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 85, 10), new THREE.MeshBasicMaterial({ color: '#ff9890' }));
         stem.position.set(0, groundHeight + 42.5, 0);
@@ -120,7 +144,7 @@ export default function PillboxMap() {
         controls.target.copy(baseTarget);
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
-        controls.minDistance = 150;
+        controls.minDistance = 220;
         controls.maxDistance = 1600;
         controls.maxPolarAngle = Math.PI / 2.3;
         controls.minPolarAngle = 0.02;
@@ -160,6 +184,8 @@ export default function PillboxMap() {
           controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0, 150);
           camera.position.add(controls.target.clone().sub(previousTarget));
           renderer.render(scene, camera);
+          // Soleil et géométrie fixes : les ombres ne sont calculées qu’une fois.
+          renderer.shadowMap.autoUpdate = false;
           if (compass.current) {
             const origin = controls.target.clone().project(camera);
             const north = controls.target.clone().add(new THREE.Vector3(0, 0, -150)).project(camera);
@@ -217,6 +243,7 @@ export default function PillboxMap() {
       <button className="map-view-switch" aria-pressed={planView} disabled={!ready} onClick={()=>{setPlanView(!planView);controlsApi.current?.plan(!planView);}}>{planView ? 'Vue en perspective' : 'Vue du dessus'}</button>
     </div>
     <div className="map-caption"><span>Glisser pour tourner · Molette pour zoomer</span><button onClick={reset} disabled={!ready}>Pillbox <LocateFixed size={13}/></button></div>
-    <div className="map-source">Satellite GTA V · Relief simplifié · <a href="https://github.com/Andreas1331/ragemp-gtav-heightmap" target="_blank" rel="noreferrer">Andreas1331</a> · <a href="https://github.com/Trusted-Studios/mapStyles" target="_blank" rel="noreferrer">Textures</a></div>
+    <div className="map-source">Satellite GTA V · Reconstruction approximative du relief · <a href="https://github.com/Andreas1331/ragemp-gtav-heightmap" target="_blank" rel="noreferrer">Andreas1331</a> · <a href="https://github.com/Trusted-Studios/mapStyles" target="_blank" rel="noreferrer">Textures</a></div>
   </div>;
 }
+
