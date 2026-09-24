@@ -615,3 +615,7 @@ h2 > span { color: #a4a09b; }
 .satellite-map .map-orientation { background: #292929e8; padding: 9px; border: 1px solid #ffffff25; border-radius: 8px; color: white; }
 .satellite-quality { position: absolute; right: 12px; bottom: 12px; padding: 5px 9px; background: #292929e8; color: #eee; border: 1px solid #ffffff25; border-radius: 6px; font-size: 10px; pointer-events: none; }
 @media(max-width:600px) { .satellite-map .map-viewport { height: 360px; } }
+
+.discord-portrait { position: absolute; inset: 65px 24px 160px; display: flex; align-items: center; justify-content: center; }
+.discord-portrait > img { width: min(100%, 340px); height: auto; aspect-ratio: 1; object-fit: contain; border-radius: 24px; border: 1px solid #ffffff20; box-shadow: 0 20px 60px #0005; }
+.discord-avatar-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: #c9b3b1; text-align: center; font-size: 13px; background: #171617; }

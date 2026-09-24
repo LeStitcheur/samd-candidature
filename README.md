@@ -77,3 +77,11 @@ Après connexion initiale, Vercel déploie automatiquement chaque nouveau commit
 Texture satellite : [Trusted-Studios/mapStyles](https://github.com/Trusted-Studios/mapStyles), tuiles `styleSatelite/5/{x}/{y}.jpg`, colonnes 12–18, lignes 20–25. Projection GTA : x = (0.02072 × X + 117.3) × 32, y = (−0.0205 × Y + 172.8) × 32. Assemblage PNG à la résolution native, affiché à plat.
 
 
+
+## Avatar Discord d’Alex
+
+Le clic sur « Le joueur » récupère l’avatar Discord actuel via `/api/discord-avatar`, sans cache applicatif. Chaque nouveau clic relance la requête. « Le personnage » rétablit Aménadiel. Une indisponibilité affiche un état neutre ; aucun faux avatar n’est présenté.
+
+Configuration nécessaire : créer une application et son bot dans https://discord.com/developers/applications, puis enregistrer dans les variables d’environnement Vercel `DISCORD_USER_ID=904012939206471710` et `DISCORD_BOT_TOKEN` (jeton de **bot**, jamais un jeton de compte utilisateur). Le bot n’a pas besoin de processus permanent. Redéployer après configuration. La fonction Vercel interroge Discord au clic et ne renvoie que l’URL publique de l’avatar. Aucun jeton n’est inclus dans le JavaScript client.
+
+En local, copier `.env.example` vers `.env.local`, renseigner le jeton et redémarrer Vite. `.env.local` est ignoré par Git. Sans configuration, l’API renvoie 503 et le site reste utilisable. Un hébergeur purement statique ne peut pas exécuter cette fonction.

@@ -1,3 +1,4 @@
+import DiscordPortrait from "./components/DiscordPortrait";
 import {
   ArrowDown,
   ArrowRight,
@@ -306,6 +307,8 @@ function Project() {
 
 function Direction() {
   const [profile, setProfile] = useState("rp");
+  const [avatarRefresh, setAvatarRefresh] = useState(0);
+  function changeProfile(value) { setProfile(value); if (value === "hrp") setAvatarRefresh(count => count + 1); }
   const p = candidature.patron;
   return (
     <section
@@ -322,19 +325,17 @@ function Direction() {
             <Cross size={17} /> SAMD · DIRECTION
           </span>
           <div className="profile-orbit" aria-hidden="true" />
-          <img
+          {profile === "hrp" ? <DiscordPortrait refresh={avatarRefresh} /> : <img
             src="/assets/amenadiel.png"
             alt="Portrait d’Aménadiel Belladonna"
             loading="lazy"
             width="968"
             height="1624"
-          />
+          />}
           <div className="profile-visual-caption">
-            <small>LE VISAGE DU PROJET</small>
+            <small>{profile === "hrp" ? "LE JOUEUR · DISCORD" : "LE VISAGE DU PROJET"}</small>
             <h3>
-              Aménadiel
-              <br />
-              Belladonna<span>.</span>
+              {profile === "hrp" ? "Alex" : <>Aménadiel<br />Belladonna</>}<span>.</span>
             </h3>
           </div>
         </div>
@@ -352,7 +353,7 @@ function Direction() {
               { id: "hrp", label: "Le joueur", icon: Gamepad2 },
             ]}
             value={profile}
-            onChange={setProfile}
+            onChange={changeProfile}
           />
           <div
             role="tabpanel"
