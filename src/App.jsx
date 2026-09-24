@@ -1,4 +1,5 @@
 import DiscordPortrait from "./components/DiscordPortrait";
+import useImageParallax from "./components/useImageParallax";
 import {
   ArrowDown,
   ArrowRight,
@@ -96,12 +97,6 @@ function Header() {
               </a>
             ))}
         </nav>
-        <a
-          className="button button-small button-red header-cta"
-          href="#dossier"
-        >
-          La candidature <ArrowUpRight size={16} />
-        </a>
         <button
           className="icon-button mobile-menu-button"
           ref={menuButton}
@@ -333,7 +328,7 @@ function Direction() {
             height="1624"
           />}
           <div className="profile-visual-caption">
-            <small>{profile === "hrp" ? "LE JOUEUR · DISCORD" : "LE VISAGE DU PROJET"}</small>
+            <small>{profile === "hrp" ? "LE JOUEUR · 904012939206471710" : "LE VISAGE DU PROJET"}</small>
             <h3>
               {profile === "hrp" ? "Alex" : <>Aménadiel<br />Belladonna</>}<span>.</span>
             </h3>
@@ -958,6 +953,7 @@ function Footer() {
 }
 
 export default function App() {
+  useImageParallax();
   useEffect(() => {
     if (location.hash) {
       const id = decodeURIComponent(location.hash.slice(1));
@@ -987,3 +983,4 @@ export default function App() {
     </>
   );
 }
+

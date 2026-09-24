@@ -49,8 +49,8 @@ export const hierarchie = [
     mission:
       "Faire le lien entre la direction et le terrain pour que le service reste organisé au quotidien.",
     responsabilites: [
-      "Coordonner les prises de service et les besoins en effectifs.",
-      "Accompagner les responsables de pôle.",
+      "Accompagner le directeur dans les prises de décisions majeures",
+      "Accompagner les DRH et les RH.",
       "Relayer les décisions et assurer la continuité de la direction.",
     ],
   },
@@ -59,19 +59,19 @@ export const hierarchie = [
     nom: "Encadrement des équipes",
     niveau: "03",
     mission:
-      "Animer les équipes médicales et faire progresser la qualité des prises en charge RP.",
+      "Animer les équipes médicales et faire progresser la qualité des prises en charge.",
     responsabilites: [
       "Encadrer les interventions et les retours d’expérience.",
       "Organiser les formations avec les référents.",
       "Évaluer les besoins et proposer des améliorations.",
+      "Coordonner les prises de service et les besoins en effectifs.",
     ],
   },
   {
     grade: "Professeur",
-    nom: "Expertise & suivi",
+    nom: "Formation et accompagnement",
     niveau: "04",
-    mission:
-      "Conduire des scènes médicales construites et assurer le suivi des patients.",
+    mission: "S'assurer de la formation et de l'évolution de l'équipe",
     responsabilites: [
       "Donner du sens au diagnostic et au parcours RP du patient.",
       "Accompagner les soignants moins expérimentés.",
