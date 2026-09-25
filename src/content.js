@@ -35,11 +35,12 @@ export const hierarchie = [
     nom: "Aménadiel Belladonna",
     niveau: "01",
     mission:
-      "Porter la vision, représenter le SAMD et veiller au bon fonctionnement de l’hôpital.",
+      "Diriger le SAMD, porter sa vision et garantir le bon fonctionnement général de l’hôpital.",
     responsabilites: [
-      "Fixer les priorités et suivre leur mise en œuvre.",
+      "Définir les orientations et les priorités du SAMD.",
+      "Superviser l’ensemble des pôles médicaux et administratifs.",
       "Garantir un cadre de travail équitable et une gestion transparente.",
-      "Assurer le dialogue avec les institutions et le staff du serveur.",
+      "Représenter le SAMD auprès des institutions et du staff du serveur.",
     ],
   },
   {
@@ -47,11 +48,12 @@ export const hierarchie = [
     nom: "Camilla Marazel & Eric Lod",
     niveau: "02",
     mission:
-      "Faire le lien entre la direction et le terrain pour que le service reste organisé au quotidien.",
+      "Assister la direction et assurer la coordination entre les différents pôles du SAMD.",
     responsabilites: [
-      "Accompagner le directeur dans les prises de décisions majeures",
-      "Accompagner les DRH et les RH.",
-      "Relayer les décisions et assurer la continuité de la direction.",
+      "Accompagner le directeur dans les décisions majeures.",
+      "Superviser et accompagner les DRH et RH.",
+      "Relayer les décisions de la direction auprès des équipes.",
+      "Assurer la continuité de la direction en cas d’absence.",
     ],
   },
   {
@@ -59,23 +61,25 @@ export const hierarchie = [
     nom: "Trixie Balladonna",
     niveau: "03",
     mission:
-      "Animer les équipes médicales et faire progresser la qualité des prises en charge.",
+      "Gérer les ressources humaines, accompagner les équipes et assurer le suivi du personnel du SAMD.",
     responsabilites: [
-      "Encadrer les interventions et les retours d’expérience.",
-      "Organiser les formations avec les référents.",
-      "Évaluer les besoins et proposer des améliorations.",
+      "Gérer les recrutements, intégrations et évolutions internes.",
+      "Assurer le suivi administratif et professionnel du personnel.",
       "Coordonner les prises de service et les besoins en effectifs.",
+      "Identifier les besoins des équipes et proposer des améliorations.",
     ],
   },
   {
     grade: "Professeur",
     nom: "Diego Diaz",
     niveau: "04",
-    mission: "S'assurer de la formation et de l'évolution de l'équipe",
+    mission:
+      "Assurer la formation, l’accompagnement et l’évolution des membres du personnel médical.",
     responsabilites: [
-      "Donner du sens au diagnostic et au parcours RP du patient.",
-      "Accompagner les soignants moins expérimentés.",
-      "Développer des consultations selon les besoins du serveur.",
+      "Organiser et dispenser les formations médicales.",
+      "Accompagner les soignants dans leur progression.",
+      "Évaluer les connaissances et les compétences du personnel.",
+      "Participer à l’élaboration et à l’amélioration des protocoles médicaux.",
     ],
   },
   {
@@ -83,71 +87,77 @@ export const hierarchie = [
     nom: "Généraliste : Océane Leal / Psychiatre : / Gynécologue : Enea Diaz",
     niveau: "05",
     mission:
-      "Accueillir, intervenir et accompagner les citoyens, de l’appel à la prise en charge à l’hôpital.",
+      "Apporter une expertise médicale avancée dans une spécialité et assurer le suivi des patients nécessitant une prise en charge spécifique.",
     responsabilites: [
-      "Assurer les interventions selon les protocoles RP du service.",
-      "Coordonner les transmissions et le transport.",
-      "Participer à la vie quotidienne de l’hôpital.",
+      "Assurer les consultations relevant de sa spécialité.",
+      "Établir des diagnostics et proposer des prises en charge adaptées.",
+      "Conseiller et accompagner les autres membres du personnel médical.",
+      "Participer au développement de sa spécialité au sein du SAMD.",
     ],
   },
   {
     grade: "Médecin",
-    nom: "Apprentissage accompagné",
+    nom: "Praticien autonome chargé du diagnostic, des soins et du suivi médical des patients.",
     niveau: "06",
     mission:
-      "Accueillir, intervenir et accompagner les citoyens, de l’appel à la prise en charge à l’hôpital.",
+      "Assurer la prise en charge médicale complète des patients, de l’examen au suivi des soins.",
     responsabilites: [
-      "Observer puis participer aux scènes en binôme.",
-      "Suivre le parcours d’intégration et les formations.",
-      "Accéder à davantage d’autonomie après validation des acquis.",
+      "Examiner les patients et établir un diagnostic.",
+      "Prescrire et réaliser les soins adaptés à leur état.",
+      "Assurer les consultations et le suivi médical.",
+      "Coordonner la prise en charge avec les autres professionnels de santé.",
     ],
   },
   {
     grade: "Chirurgien",
-    nom: "Apprentissage accompagné",
+    nom: "Médecin spécialisé dans la réalisation et le suivi des interventions chirurgicales.",
     niveau: "07",
     mission:
-      "Découvrir le métier dans un cadre progressif, avec un référent et des objectifs clairs.",
+      "Prendre en charge les patients nécessitant une intervention chirurgicale et assurer leur suivi opératoire.",
     responsabilites: [
-      "Observer puis participer aux scènes en binôme.",
-      "Suivre le parcours d’intégration et les formations.",
-      "Accéder à davantage d’autonomie après validation des acquis.",
+      "Évaluer la nécessité et les conditions d’une intervention.",
+      "Réaliser les opérations chirurgicales selon les protocoles du SAMD.",
+      "Assurer le suivi préopératoire et postopératoire.",
+      "Collaborer avec les médecins et infirmiers lors des interventions.",
     ],
   },
   {
     grade: "Interne",
-    nom: "Apprentissage accompagné",
+    nom: "Médecin en formation exerçant sous la supervision du personnel médical confirmé.",
     niveau: "08",
     mission:
-      "Découvrir le métier dans un cadre progressif, avec un référent et des objectifs clairs.",
+      "Développer ses compétences médicales progressivement tout en participant activement à la prise en charge des patients.",
     responsabilites: [
-      "Observer puis participer aux scènes en binôme.",
-      "Suivre le parcours d’intégration et les formations.",
-      "Accéder à davantage d’autonomie après validation des acquis.",
+      "Participer aux consultations et interventions sous supervision.",
+      "Réaliser les premiers examens et soins autorisés.",
+      "Suivre les formations et validations nécessaires à son évolution.",
+      "Assister les médecins, chirurgiens et spécialistes dans leurs missions.",
     ],
   },
   {
     grade: "Infirmier",
-    nom: "Apprentissage accompagné",
+    nom: "Soignant chargé des soins infirmiers, de la surveillance et de l’accompagnement des patients.",
     niveau: "09",
     mission:
-      "Découvrir le métier dans un cadre progressif, avec un référent et des objectifs clairs.",
+      "Assurer les soins courants, la surveillance des patients et assister l’équipe médicale dans leur prise en charge.",
     responsabilites: [
-      "Observer puis participer aux scènes en binôme.",
-      "Suivre le parcours d’intégration et les formations.",
-      "Accéder à davantage d’autonomie après validation des acquis.",
+      "Réaliser les soins infirmiers et surveiller l’état des patients.",
+      "Préparer le matériel nécessaire aux consultations et interventions.",
+      "Assister les médecins et chirurgiens lors des prises en charge.",
+      "Assurer les transmissions médicales et le suivi des patients hospitalisés.",
     ],
   },
   {
     grade: "Ambulancier",
-    nom: "Apprentissage accompagné",
+    nom: "Premier intervenant chargé du secours, de la stabilisation et du transport des patients.",
     niveau: "10",
     mission:
-      "Découvrir le métier dans un cadre progressif, avec un référent et des objectifs clairs.",
+      "Intervenir rapidement sur le terrain, apporter les premiers secours et assurer le transport sécurisé des patients.",
     responsabilites: [
-      "Observer puis participer aux scènes en binôme.",
-      "Suivre le parcours d’intégration et les formations.",
-      "Accéder à davantage d’autonomie après validation des acquis.",
+      "Répondre aux appels d’urgence et se rendre sur les lieux d’intervention.",
+      "Évaluer rapidement l’état des victimes et effectuer les premiers secours.",
+      "Stabiliser et préparer les patients avant leur transport.",
+      "Assurer le transport vers l’hôpital et transmettre les informations à l’équipe médicale.",
     ],
   },
 ];
