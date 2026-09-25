@@ -44,7 +44,7 @@ export const hierarchie = [
   },
   {
     grade: "Conseil administratif",
-    nom: "Continuité & coordination",
+    nom: "Camilla Marazel & Eric Lod",
     niveau: "02",
     mission:
       "Faire le lien entre la direction et le terrain pour que le service reste organisé au quotidien.",
@@ -56,7 +56,7 @@ export const hierarchie = [
   },
   {
     grade: "DRH & RH",
-    nom: "Encadrement des équipes",
+    nom: "Trixie Balladonna",
     niveau: "03",
     mission:
       "Animer les équipes médicales et faire progresser la qualité des prises en charge.",
@@ -69,7 +69,7 @@ export const hierarchie = [
   },
   {
     grade: "Professeur",
-    nom: "Formation et accompagnement",
+    nom: "Diego Diaz",
     niveau: "04",
     mission: "S'assurer de la formation et de l'évolution de l'équipe",
     responsabilites: [
@@ -80,7 +80,7 @@ export const hierarchie = [
   },
   {
     grade: "Spécialiste",
-    nom: "Généraliste / Psychiatre / Gynécologue",
+    nom: "Généraliste : Océane Leal / Psychiatre : / Gynécologue : Enea Diaz",
     niveau: "05",
     mission:
       "Accueillir, intervenir et accompagner les citoyens, de l’appel à la prise en charge à l’hôpital.",
@@ -95,7 +95,7 @@ export const hierarchie = [
     nom: "Apprentissage accompagné",
     niveau: "06",
     mission:
-      "Découvrir le métier dans un cadre progressif, avec un référent et des objectifs clairs.",
+      "Accueillir, intervenir et accompagner les citoyens, de l’appel à la prise en charge à l’hôpital.",
     responsabilites: [
       "Observer puis participer aux scènes en binôme.",
       "Suivre le parcours d’intégration et les formations.",
