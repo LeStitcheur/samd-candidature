@@ -58,7 +58,7 @@ export const hierarchie = [
   },
   {
     grade: "DRH & RH",
-    nom: "Trixie Balladonna",
+    nom: "Trixie Balladonna | Lorenzo Vitale",
     niveau: "03",
     mission:
       "Gérer les ressources humaines, accompagner les équipes et assurer le suivi du personnel du SAMD.",
@@ -84,7 +84,7 @@ export const hierarchie = [
   },
   {
     grade: "Spécialiste",
-    nom: "Généraliste : Océane Leal / Psychiatre : / Gynécologue : Enea Diaz",
+    nom: "Généraliste : Océane Leal | Psychiatre : Enea Diaz| Gynécologue : xx",
     niveau: "05",
     mission:
       "Apporter une expertise médicale avancée dans une spécialité et assurer le suivi des patients nécessitant une prise en charge spécifique.",
