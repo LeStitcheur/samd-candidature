@@ -8,7 +8,7 @@ export const candidature = {
       "Aménadiel Belladonna présente sa candidature à la direction du SAMD avec une ambition : construire un service médical présent, exigeant et profondément humain. Avec un passé de médecin réputé en Sicile, son projet place l’accompagnement des équipes et la qualité des soins au centre de la vie de l’hôpital.",
     motivationRP:
       "Je souhaite faire du SAMD un lieu où chaque intervention a du sens, où chaque soignant trouve sa place et où chaque patient devient le point de départ d’une histoire.",
-    pseudoHRP: "Alex",
+    pseudoHRP: "Alex | LeStitcheurFou",
     ageHRP: null,
     experienceHRP:
       "Une solide expérience du RP EMS sur Alynia RP, avec un précédent passage à la direction de l’hôpital. Je connais les attentes du métier, les contraintes d’une équipe et l’importance de faire vivre le RP médical au quotidien.",
@@ -45,7 +45,7 @@ export const hierarchie = [
   },
   {
     grade: "Conseil administratif",
-    nom: "Camilla Marazel & Eric Lod",
+    nom: "Camila Marazel & Eric Lod",
     niveau: "02",
     mission:
       "Assister la direction et assurer la coordination entre les différents pôles du SAMD.",

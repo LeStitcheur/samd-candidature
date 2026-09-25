@@ -1,5 +1,3 @@
-import DiscordPortrait from "./components/DiscordPortrait";
-import useImageParallax from "./components/useImageParallax";
 import {
   ArrowDown,
   ArrowRight,
@@ -24,7 +22,9 @@ import {
   X,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import DiscordPortrait from "./components/DiscordPortrait";
 import Tabs from "./components/Tabs.jsx";
+import useImageParallax from "./components/useImageParallax";
 import { candidature, engagements, hierarchie, horizons } from "./content.js";
 
 const PillboxMap = lazy(() => import("./components/PillboxMap.jsx"));
@@ -303,7 +303,10 @@ function Project() {
 function Direction() {
   const [profile, setProfile] = useState("rp");
   const [avatarRefresh, setAvatarRefresh] = useState(0);
-  function changeProfile(value) { setProfile(value); if (value === "hrp") setAvatarRefresh(count => count + 1); }
+  function changeProfile(value) {
+    setProfile(value);
+    if (value === "hrp") setAvatarRefresh((count) => count + 1);
+  }
   const p = candidature.patron;
   return (
     <section
@@ -320,17 +323,34 @@ function Direction() {
             <Cross size={17} /> SAMD · DIRECTION
           </span>
           <div className="profile-orbit" aria-hidden="true" />
-          {profile === "hrp" ? <DiscordPortrait refresh={avatarRefresh} /> : <img
-            src="/assets/amenadiel.png"
-            alt="Portrait d’Aménadiel Belladonna"
-            loading="lazy"
-            width="968"
-            height="1624"
-          />}
+          {profile === "hrp" ? (
+            <DiscordPortrait refresh={avatarRefresh} />
+          ) : (
+            <img
+              src="/assets/amenadiel.png"
+              alt="Portrait d’Aménadiel Belladonna"
+              loading="lazy"
+              width="968"
+              height="1624"
+            />
+          )}
           <div className="profile-visual-caption">
-            <small>{profile === "hrp" ? "LE JOUEUR · 904012939206471710" : "LE VISAGE DU PROJET"}</small>
+            <small>
+              {profile === "hrp"
+                ? "LE JOUEUR · 904012939206471710"
+                : "LE VISAGE DU PROJET"}
+            </small>
             <h3>
-              {profile === "hrp" ? "Alex" : <>Aménadiel<br />Belladonna</>}<span>.</span>
+              {profile === "hrp" ? (
+                "Alex"
+              ) : (
+                <>
+                  Aménadiel
+                  <br />
+                  Belladonna
+                </>
+              )}
+              <span>.</span>
             </h3>
           </div>
         </div>
@@ -831,7 +851,7 @@ function Future() {
         <div className="oceanic-inner">
           <span className="pill">
             <span className="status-dot" />
-            L’ÉVOLUTION POSSIBLE
+            L’ÉVOLUTION PROPOSEE
           </span>
           <div className="oceanic-layout">
             <div>
@@ -839,7 +859,7 @@ function Future() {
               <h3>
                 Prochain arrêt.
                 <br />
-                <span>Océanic.</span>
+                <span>Ocean.</span>
                 <ArrowUpRight aria-hidden="true" />
               </h3>
             </div>
@@ -983,4 +1003,3 @@ export default function App() {
     </>
   );
 }
-
