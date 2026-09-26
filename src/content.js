@@ -58,7 +58,7 @@ export const hierarchie = [
   },
   {
     grade: "DRH & RH",
-    nom: "Trixie Balladonna | Lorenzo Vitale",
+    nom: "Trixy Balladonna | Lorenzo Vitale",
     niveau: "03",
     mission:
       "Gérer les ressources humaines, accompagner les équipes et assurer le suivi du personnel du SAMD.",
