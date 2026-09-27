@@ -179,18 +179,18 @@ function Hero() {
             </span>
           </div>
         </div>
-        <div className="hero-person">
+        <div className="hero-person hero-team">
           <div className="portrait-glow" />
           <span className="hero-outline" aria-hidden="true">
             SAMD
           </span>
           <img
             className="hero-portrait"
-            src="/assets/amenadiel.png"
-            alt="Aménadiel Belladonna, candidat à la direction du SAMD, en costume noir et chemise verte"
+            src="/assets/samd-team.png"
+            alt="Illustration de l’équipe du SAMD réunie en tenue médicale"
             fetchPriority="high"
-            width="968"
-            height="1624"
+            width="1536"
+            height="1024"
           />
           <div className="portrait-gradient" />
           <div className="candidate-label">
