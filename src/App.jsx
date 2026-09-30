@@ -493,6 +493,17 @@ function Team() {
               </li>
             ))}
           </ul>
+          <div className="role-illustration" aria-hidden="true">
+            <img
+              key={role.niveau}
+              src={`/assets/grades/grade-${role.niveau}.png`}
+              alt=""
+              width="1254"
+              height="1254"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <div className="role-footer">
             <ShieldCheck size={17} />
             Une responsabilité, avant un titre.
@@ -1003,3 +1014,4 @@ export default function App() {
     </>
   );
 }
+
