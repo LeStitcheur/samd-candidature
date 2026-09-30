@@ -585,12 +585,12 @@ function Hospital() {
           <button
             ref={photoButton}
             className="hospital-photo"
-            aria-label="Agrandir la capture de Ocean Medical Center"
+            aria-label="Agrandir la capture de l’Ocean Medical Center"
             onClick={() => setPhotoOpen(true)}
           >
             <img
               src="/assets/ocean-medical-center.jpeg"
-              alt="Façade du Ocean Medical Center dans GTA V"
+              alt="Façade de l’Ocean Medical Center dans GTA V"
               loading="lazy"
               width="3440"
               height="1440"
@@ -654,7 +654,7 @@ function Hospital() {
         >
           <X />
         </button>
-        <img src="/assets/ocean-medical-center.jpeg" alt="Vue agrandie de Ocean Medical Center" />
+        <img src="/assets/ocean-medical-center.jpeg" alt="Vue agrandie de l’Ocean Medical Center" />
         <div>
           <h3 id="photo-title">Ocean Medical Center</h3>
           <p>GTA V / Rockstar Games · Capture de référence</p>

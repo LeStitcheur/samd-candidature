@@ -1,100 +1,156 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cross, LocateFixed, Plus, Minus, MapPin, Navigation, LoaderCircle } from 'lucide-react';
+import * as THREE from 'three';
+import { createOceanHospital } from './OceanHospitalModel.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Cross, LocateFixed, Plus, Minus, LoaderCircle } from 'lucide-react';
 
-// Position du bâtiment central sur la capture satellite fournie (1038 × 675).
-const OCEAN = { x: 530, y: 310 };
+const WIDTH = 160, DEPTH = WIDTH * 675 / 1038;
+// Fond géographique plan : aucune déformation des rues de la capture Realmap.
+function elevation() { return 0; }
+function position(u, v) { return new THREE.Vector3((u - .5) * WIDTH, elevation(u, v), (v - .5) * DEPTH); }
+const HOSPITAL = position(530 / 1038, 310 / 675);
 
 export default function HospitalMap() {
-  const host = useRef(null), canvas = useRef(null), marker = useRef(null), api = useRef(null);
+  const host = useRef(null), canvas = useRef(null), marker = useRef(null), compass = useRef(null), api = useRef(null);
   const [status, setStatus] = useState('loading');
-  const [limits, setLimits] = useState({ min: false, max: false });
+  const [topView, setTopView] = useState(true);
   useEffect(() => {
-    const element = host.current, surface = canvas.current;
-    const context = surface.getContext('2d');
-    const picture = new Image();
-    let disposed = false, width = 0, height = 0, ratio = 1, scale = 0.5;
-    let center = { ...OCEAN }, ready = false, initialized = false;
-    const pointers = new Map();
-    let gesture = null;
-    if (!context) { setStatus('error'); return; }
-    function bounds() {
-      // Pas de suragrandissement : un pixel source au maximum par pixel écran.
-      const min = Math.max(width / picture.width, height / picture.height);
-      return { min, max: Math.max(min, 1 / ratio) };
+    let renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas: canvas.current, antialias: true, alpha: true }); }
+    catch { setStatus('error'); return; }
+    let disposed = false, ready = false;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, 1, .1, 1000);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const controls = new OrbitControls(camera, canvas.current);
+    controls.enablePan = true;
+    controls.screenSpacePanning = false;
+    let planView = true;
+    controls.minDistance = 42; controls.maxDistance = 200;
+    controls.minPolarAngle = .025; controls.maxPolarAngle = Math.PI * .44;
+    controls.target.copy(HOSPITAL);
+    controls.rotateSpeed = .65;
+    const geometry = new THREE.PlaneGeometry(WIDTH, DEPTH, 128, 84);
+    geometry.rotateX(-Math.PI / 2);
+    const vertices = geometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      vertices.setY(i, elevation(vertices.getX(i) / WIDTH + .5, vertices.getZ(i) / DEPTH + .5));
     }
+    geometry.computeVertexNormals();
+    const material = new THREE.MeshBasicMaterial();
+    scene.add(new THREE.Mesh(geometry, material));
+    const hospital = createOceanHospital();
+    hospital.group.position.copy(HOSPITAL);
+    hospital.group.rotation.y = -.35;
+    scene.add(hospital.group);
+    hospital.group.visible = false;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x657078, 2.5));
+    const sunlight = new THREE.DirectionalLight(0xffe5e0, 2.6);
+    sunlight.position.set(-40, 90, 55); scene.add(sunlight);
+    const anchor = HOSPITAL.clone().add(new THREE.Vector3(0, 26, 0));
+    const projected = new THREE.Vector3();
     function render() {
-      if (!ready || disposed || !width || !height) return;
-      const { min, max } = bounds();
-      scale = Math.min(max, Math.max(min, scale));
-      center.x = Math.max(width / (2 * scale), Math.min(picture.width - width / (2 * scale), center.x));
-      center.y = Math.max(height / (2 * scale), Math.min(picture.height - height / (2 * scale), center.y));
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      context.clearRect(0, 0, width, height);
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = 'high';
-      context.drawImage(picture, width / 2 - center.x * scale, height / 2 - center.y * scale, picture.width * scale, picture.height * scale);
-      const x = width / 2 + (OCEAN.x - center.x) * scale, y = height / 2 + (OCEAN.y - center.y) * scale;
-      marker.current.style.left = `${x}px`; marker.current.style.top = `${y}px`;
-      marker.current.style.visibility = x < 0 || x > width || y < 0 || y > height ? 'hidden' : 'visible';
-      setLimits(previous => { const next = { min: scale <= min + .001, max: scale >= max - .001 }; return previous.min === next.min && previous.max === next.max ? previous : next; });
+      if (disposed || !ready) return;
+      if (planView) {
+        const tangent = Math.tan(THREE.MathUtils.degToRad(20));
+        const maxHeight = Math.min(DEPTH, WIDTH / camera.aspect) * .98 / (2 * tangent);
+        camera.position.y = Math.min(camera.position.y, maxHeight);
+        const halfH = camera.position.y * tangent, halfW = halfH * camera.aspect;
+        const x = THREE.MathUtils.clamp(controls.target.x, -WIDTH/2+halfW, WIDTH/2-halfW);
+        const z = THREE.MathUtils.clamp(controls.target.z, -DEPTH/2+halfH, DEPTH/2-halfH);
+        camera.position.x += x - controls.target.x; camera.position.z += z - controls.target.z;
+        controls.target.x = x; controls.target.z = z;
+      }
+      renderer.render(scene, camera);
+      projected.copy(planView ? HOSPITAL : anchor).project(camera);
+      marker.current.style.left = `${(projected.x + 1) * host.current.clientWidth / 2}px`;
+      marker.current.style.top = `${(1 - projected.y) * host.current.clientHeight / 2}px`;
+      marker.current.style.visibility = Math.abs(projected.x) <= 1 && Math.abs(projected.y) <= 1 && Math.abs(projected.z) <= 1 ? 'visible' : 'hidden';
+      compass.current.style.transform = `rotate(${controls.getAzimuthalAngle()}rad)`;
     }
-    function reset() { if (!ready) return; center = { ...OCEAN }; scale = bounds().max * .78; render(); }
-    function zoom(factor, x = width / 2, y = height / 2) {
-      if (!ready) return;
-      const before = scale, { min, max } = bounds(); scale = Math.min(max, Math.max(min, scale * factor));
-      center.x += (x - width / 2) * (1 / before - 1 / scale);
-      center.y += (y - height / 2) * (1 / before - 1 / scale); render();
+    function reset(top = true) {
+      planView = top;
+      setTopView(top);
+      hospital.group.visible = !top;
+      controls.enableRotate = !top;
+      controls.mouseButtons.LEFT = top ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+      controls.touches.ONE = top ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
+      controls.target.copy(HOSPITAL);
+      if (top) {
+        const aspect = host.current.clientWidth / host.current.clientHeight;
+        const distance = Math.min(DEPTH * .94, WIDTH / aspect * .94) / (2 * Math.tan(THREE.MathUtils.degToRad(20)));
+        camera.position.copy(HOSPITAL).add(new THREE.Vector3(0, distance, .01));
+      } else {
+        controls.target.y = 10;
+        const distance = host.current.clientWidth < 500 ? 78 : 70;
+        camera.position.copy(controls.target).add(new THREE.Vector3(distance * .45, distance * .4, distance * .78));
+      }
+      controls.update(); render();
     }
-    function wheel(event) { event.preventDefault(); const r = surface.getBoundingClientRect(); zoom(Math.exp(-event.deltaY * .002), event.clientX - r.left, event.clientY - r.top); }
-    function startGesture() {
-      const points = [...pointers.values()];
-      if (!points.length) { gesture = null; return; }
-      gesture = { x: points.reduce((n,p)=>n+p.x,0)/points.length, y: points.reduce((n,p)=>n+p.y,0)/points.length, distance: points.length > 1 ? Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y) : 0 };
+    function focusHospital() { reset(false); }
+    function zoom(factor) {
+      const offset = camera.position.clone().sub(controls.target);
+      offset.setLength(THREE.MathUtils.clamp(offset.length() / factor, controls.minDistance, controls.maxDistance));
+      camera.position.copy(controls.target).add(offset); controls.update(); render();
     }
-    function down(event) { if (event.button !== 0) return; surface.focus({ preventScroll: true }); surface.setPointerCapture(event.pointerId); pointers.set(event.pointerId,{x:event.clientX,y:event.clientY}); startGesture(); }
-    function move(event) {
-      if (!pointers.has(event.pointerId) || !ready) return;
-      const previous = gesture; pointers.set(event.pointerId,{x:event.clientX,y:event.clientY}); startGesture();
-      center.x -= (gesture.x-previous.x)/scale; center.y -= (gesture.y-previous.y)/scale;
-      if (gesture.distance && previous.distance) { const r=surface.getBoundingClientRect(); zoom(gesture.distance/previous.distance,gesture.x-r.left,gesture.y-r.top); } else render();
-    }
-    function up(event) { pointers.delete(event.pointerId); startGesture(); }
     function key(event) {
-      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-','Home'].includes(event.key)) event.preventDefault(); else return;
-      if (event.key === 'Home') return reset();
-      if (event.key === '+' || event.key === '=') return zoom(1.25);
-      if (event.key === '-') return zoom(.8);
-      center.x += ({ArrowLeft:-60,ArrowRight:60}[event.key] || 0)/scale;
-      center.y += ({ArrowUp:-60,ArrowDown:60}[event.key] || 0)/scale; render();
+      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-','Home'].includes(event.key)) return;
+      event.preventDefault();
+      if (event.key === 'Home') { reset(); return; }
+      if (['+','=','-'].includes(event.key)) { zoom(event.key === '-' ? .8 : 1.25); return; }
+      if (planView) {
+        const x = ({ArrowLeft:-4,ArrowRight:4}[event.key] || 0), z = ({ArrowUp:-4,ArrowDown:4}[event.key] || 0);
+        camera.position.x += x; controls.target.x += x; camera.position.z += z; controls.target.z += z;
+        controls.update(); render(); return;
+      }
+      const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+      spherical.theta += ({ArrowLeft:.12, ArrowRight:-.12}[event.key] || 0);
+      spherical.phi = THREE.MathUtils.clamp(spherical.phi + ({ArrowUp:-.1, ArrowDown:.1}[event.key] || 0), controls.minPolarAngle, controls.maxPolarAngle);
+      camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical)); controls.update(); render();
     }
     const observer = new ResizeObserver(() => {
-      width = element.clientWidth; height = element.clientHeight; ratio = window.devicePixelRatio || 1;
-      surface.width = Math.round(width * ratio); surface.height = Math.round(height * ratio);
-      if (ready && !initialized) { initialized = true; reset(); } else render();
+      const {clientWidth:w, clientHeight:h} = host.current;
+      if (!w || !h) return;
+      renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); render();
     });
-    observer.observe(element);
-    const listeners = { pointerdown:down, pointermove:move, pointerup:up, pointercancel:up, lostpointercapture:up, keydown:key };
-    Object.entries(listeners).forEach(([name,fn])=>surface.addEventListener(name,fn));
-    surface.addEventListener('wheel',wheel,{passive:false});
-    picture.onload = () => { if (disposed) return; ready = true; setStatus('ready'); if (width) { initialized = true; reset(); } };
-    picture.onerror = () => { if (!disposed) setStatus('error'); };
-    picture.src = '/map/ocean-satellite.png';
-    api.current = { reset, zoom };
-    return () => { disposed = true; observer.disconnect(); picture.onload = null; picture.onerror = null; api.current = null; Object.entries(listeners).forEach(([name,fn])=>surface.removeEventListener(name,fn)); surface.removeEventListener('wheel',wheel); };
+    observer.observe(host.current);
+    controls.addEventListener('change', render);
+    canvas.current.addEventListener('keydown', key);
+    const surface = canvas.current;
+    function lost(event) { event.preventDefault(); setStatus('error'); }
+    surface.addEventListener('webglcontextlost', lost);
+    const texture = new THREE.TextureLoader().load('/map/ocean-satellite.png', loaded => {
+      if (disposed) { loaded.dispose(); return; }
+      loaded.colorSpace = THREE.SRGBColorSpace;
+      loaded.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      material.map = loaded; material.needsUpdate = true;
+      ready = true; setStatus('ready'); reset();
+    }, undefined, () => { if (!disposed) setStatus('error'); });
+    api.current = {reset, zoom, focusHospital};
+    return () => {
+      disposed = true; observer.disconnect(); controls.dispose(); api.current = null;
+      surface.removeEventListener('keydown', key); surface.removeEventListener('webglcontextlost', lost);
+      hospital.dispose(); geometry.dispose(); material.dispose(); texture.dispose(); renderer.dispose();
+    };
   }, []);
   const ready = status === 'ready';
-  return <div className="pillbox-map satellite-map">
-    <div className="map-topbar"><span><span className="map-status-dot"/>OCEAN MEDICAL CENTER</span><span className="map-mode">VUE SATELLITE</span></div>
+  return <div className="pillbox-map satellite-map realmap-view">
+    <div className="map-topbar"><span><span className="map-status-dot"/>OCEAN MEDICAL CENTER</span><span className="map-mode">{topView ? 'SATELLITE' : 'BÂTIMENT 3D'}</span></div>
     <div className="map-viewport" ref={host}>
-      <canvas ref={canvas} className="satellite-canvas" tabIndex="0" role="img" aria-label="Carte satellite GTA de Ocean Medical Center. Glisser pour déplacer, pincer ou utiliser les boutons pour zoomer. Au clavier : flèches, plus, moins et touche Début pour recentrer."/>
+      <canvas ref={canvas} className="satellite-canvas" tabIndex="0" role="img" aria-label="Carte interactive de l’Ocean Medical Center. Glisser pour déplacer la carte ou tourner en mode 3D. Flèches, plus, moins, Début pour recentrer."/>
       <div className="map-marker satellite-marker" ref={marker} hidden={!ready}><span className="map-marker-icon"><Cross size={16}/></span><span>Ocean Medical Center<strong>SAMD · L’hôpital</strong></span></div>
-      {status === 'loading' && <div className="map-state" role="status"><LoaderCircle className="spin" size={27}/>Chargement de la carte…</div>}
-      {status === 'error' && <div className="map-state" role="status"><MapPin/><strong>Carte indisponible</strong><p>La capture de l’Ocean Medical Center reste disponible à côté.</p></div>}
-      <div className="map-navigation"><button aria-label="Recentrer sur Ocean Medical Center" title="Recentrer sur Ocean Medical Center" disabled={!ready} onClick={()=>api.current?.reset()}><LocateFixed size={18}/></button><button aria-label="Zoomer sur la carte" title={limits.max ? 'Résolution maximale atteinte' : 'Zoomer'} disabled={!ready || limits.max} onClick={()=>api.current?.zoom(1.25)}><Plus size={19}/></button><button aria-label="Dézoomer sur la carte" title="Dézoomer" disabled={!ready || limits.min} onClick={()=>api.current?.zoom(.8)}><Minus size={19}/></button></div>
-      <div className="map-orientation"><Navigation size={17} style={{transform:'rotate(-45deg)'}}/><span>N</span></div>
-      <span className="satellite-quality">{limits.max ? 'Netteté maximale' : 'Satellite GTA V'}</span>
+      {status === 'loading' && <div className="map-state" role="status"><LoaderCircle className="spin"/>Chargement du modèle 3D…</div>}
+      {status === 'error' && <div className="map-state" role="status"><p>La vue 3D n’est pas disponible sur ce navigateur.</p><a href="/map/ocean-satellite.png" target="_blank" rel="noreferrer">Ouvrir la carte satellite</a></div>}
+      <div className="map-navigation">
+        <button aria-label="Recentrer sur Ocean Medical Center" disabled={!ready} onClick={()=>{api.current?.reset();}}><LocateFixed size={18}/></button>
+        <button aria-label="Zoomer sur la carte" disabled={!ready} onClick={()=>api.current?.zoom(1.25)}><Plus size={19}/></button>
+        <button aria-label="Dézoomer sur la carte" disabled={!ready} onClick={()=>api.current?.zoom(.8)}><Minus size={19}/></button>
+      </div>
+      <div className="map-orientation"><span ref={compass}>↑</span><span>N</span></div>
+      <button className="map-view-switch" disabled={!ready} aria-pressed={topView} onClick={()=>{setTopView(!topView); api.current?.reset(!topView);}}> {topView ? 'Explorer le bâtiment 3D' : 'Revenir à la carte'} </button>
     </div>
-    <div className="map-caption"><span>Glisser pour déplacer · Pincer ou ± pour zoomer</span><button onClick={()=>api.current?.reset()} disabled={!ready}>Ocean <LocateFixed size={13}/></button></div>
-    <div className="map-source">GTA V / Rockstar Games · Capture satellite fournie · Emplacement Ocean Medical Center</div>
+    <div className="map-caption"><span>{topView ? 'Glisser pour déplacer · Molette ou ± pour zoomer' : 'Glisser pour tourner · Clic droit pour déplacer'}</span><button disabled={!ready} onClick={()=>api.current?.focusHospital()}>Voir le bâtiment <LocateFixed size={13}/></button></div>
+    <div className="map-source">GTA V / Rockstar Games · Capture satellite fournie · <a href="https://forge.plebmasters.de/map?x=-2817.0567056705668&y=-1892.2142214221417&z=1&b=Realmap&o=" target="_blank" rel="noreferrer">Référence : Pleb Masters · Realmap ↗</a></div>
   </div>;
 }

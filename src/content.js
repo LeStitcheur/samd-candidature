@@ -58,7 +58,7 @@ export const hierarchie = [
   },
   {
     grade: "DRH & RH",
-    nom: "Trixy Balladonna | Lorenzo Vitale",
+    nom: "Trixy Balladonna | Lorenzo Vitale | Oliver Karter",
     niveau: "03",
     mission:
       "Gérer les ressources humaines, accompagner les équipes et assurer le suivi du personnel du SAMD.",
@@ -84,7 +84,7 @@ export const hierarchie = [
   },
   {
     grade: "Spécialiste",
-    nom: "Généraliste : Océane Leal | Psychiatre : Enea Diaz| Gynécologue : xx",
+    nom: "Généraliste : Bart Harrelson  | Psychiatre : Enea Diaz | Gynécologue : xx",
     niveau: "05",
     mission:
       "Apporter une expertise médicale avancée dans une spécialité et assurer le suivi des patients nécessitant une prise en charge spécifique.",
@@ -97,7 +97,7 @@ export const hierarchie = [
   },
   {
     grade: "Médecin",
-    nom: "Praticien autonome chargé du diagnostic, des soins et du suivi médical des patients.",
+    nom: "Polo Kolo | Océane Leal",
     niveau: "06",
     mission:
       "Assurer la prise en charge médicale complète des patients, de l’examen au suivi des soins.",
@@ -247,7 +247,6 @@ export const horizons = [
       "Adapter les moyens logistiques et assurer la continuité du service.",
       "Ouvrir de nouvelles spécialités si les effectifs le permettent.",
     ],
-    repere:
-      "Une évolution préparée collectivement et validée avec le staff.",
+    repere: "Une évolution préparée collectivement et validée avec le staff.",
   },
 ];
