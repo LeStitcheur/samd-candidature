@@ -17,15 +17,15 @@ export const candidature = {
       "Porter un projet collectif durable, proposer des scènes médicales de qualité et donner aux joueurs l’envie de s’investir dans le service public.",
   },
   hopital: {
-    nom: "Pillbox Hill Medical Center",
-    quartier: "Pillbox Hill · Los Santos",
-    adresse: "Elgin Avenue / Strawberry Avenue",
+    nom: "Ocean Medical Center",
+    quartier: "Pacific Bluffs · Los Santos",
+    adresse: "Playa Vista",
     provisoire: false,
-    lien: "https://gta.fandom.com/wiki/Pillbox_Hill_Medical_Center",
-    screenshot: "/assets/hospital.png",
-    screenshotSource: "https://gta.fandom.com/wiki/Pillbox_Hill_Medical_Center",
+    lien: "/assets/ocean-medical-center.jpeg",
+    screenshot: "/assets/ocean-medical-center.jpeg",
+    screenshotSource: "/assets/ocean-medical-center.jpeg",
     carte3DSource: "https://github.com/Andreas1331/ragemp-gtav-heightmap",
-    evolution: "Océanic",
+    evolution: "Développement des spécialités",
   },
 };
 
@@ -207,7 +207,7 @@ export const horizons = [
     periode: "Le premier mois",
     titre: "Poser des bases solides.",
     texte:
-      "Écouter l’équipe, remettre de la clarté dans le fonctionnement et assurer une présence régulière à Pillbox Hill.",
+      "Écouter l’équipe, remettre de la clarté dans le fonctionnement et assurer une présence régulière à l’Ocean Medical Center.",
     objectifs: [
       "Rencontrer les membres et identifier les besoins.",
       "Clarifier la hiérarchie, les rôles et les règles internes.",
@@ -240,14 +240,14 @@ export const horizons = [
     periode: "À partir de 3 mois",
     titre: "Préparer le prochain chapitre.",
     texte:
-      "Consolider ce qui fonctionne et étudier l’évolution vers Océanic, près de la plage, avec les responsables du serveur.",
+      "Consolider ce qui fonctionne et développer les services de l’Ocean Medical Center avec les responsables du serveur.",
     objectifs: [
       "Évaluer la stabilité de l’équipe et les besoins réels.",
-      "Construire un projet viable pour l’hôpital Océanic.",
-      "Préparer la transition logistique et la continuité du service.",
+      "Construire un développement viable pour l’Ocean Medical Center.",
+      "Adapter les moyens logistiques et assurer la continuité du service.",
       "Ouvrir de nouvelles spécialités si les effectifs le permettent.",
     ],
     repere:
-      "Une évolution préparée collectivement et validée avant toute transition.",
+      "Une évolution préparée collectivement et validée avec le staff.",
   },
 ];

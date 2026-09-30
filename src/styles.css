@@ -593,11 +593,11 @@ h2 > span { color: #a4a09b; }
 .profile-visual:after { display: none; }
 .profile-orbit { display: none; }
 .hospital-photo { background: #1c1c1c; }
-.hospital-photo > img { aspect-ratio: 960 / 536; height: auto; object-fit: contain; filter: none; }
+.hospital-photo > img { aspect-ratio: 3440 / 1440; height: auto; object-fit: contain; filter: none; }
 .hospital-photo:hover > img { transform: none; }
 @media (max-width: 900px) {
   .hospital-photo { display: flex; align-items: center; }
-  .hospital-photo > img { height: auto; aspect-ratio: 960 / 536; }
+  .hospital-photo > img { height: auto; aspect-ratio: 3440 / 1440; }
 }
 @media (max-width: 600px) {
   .hero-person { height: 570px; }

@@ -27,7 +27,7 @@ import Tabs from "./components/Tabs.jsx";
 import useImageParallax from "./components/useImageParallax";
 import { candidature, engagements, hierarchie, horizons } from "./content.js";
 
-const PillboxMap = lazy(() => import("./components/PillboxMap.jsx"));
+const HospitalMap = lazy(() => import("./components/HospitalMap.jsx"));
 const chapters = [
   { id: "projet", label: "Le projet" },
   { id: "direction", label: "La direction" },
@@ -210,7 +210,7 @@ function Hero() {
       </div>
       <div className="hero-bottom">
         <span>
-          <MapPin size={14} /> Pillbox Hill, Los Santos
+          <MapPin size={14} /> Pacific Bluffs, Los Santos
         </span>
         <span>Une vision humaine. Une ambition collective.</span>
         <a href="#dossier" aria-label="Parcourir les chapitres du dossier">
@@ -391,7 +391,7 @@ function Direction() {
               <div>
                 <MapPin size={18} />
                 <span>
-                  Établissement<strong>Pillbox Hill</strong>
+                  Établissement<strong>{candidature.hopital.nom}</strong>
                 </span>
               </div>
             </div>
@@ -547,18 +547,18 @@ function Hospital() {
       id="hopital"
       aria-labelledby="hospital-title"
     >
-      <SectionLabel number="04" aside="Pillbox aujourd’hui. Océanic demain.">
+      <SectionLabel number="04" aside="Ocean Medical Center · Pacific Bluffs">
         L’HÔPITAL
       </SectionLabel>
       <div className="section-intro">
         <h2 id="hospital-title">
           Notre point d’ancrage.
           <br />
-          <span>Au cœur de Los Santos.</span>
+          <span>Sur la côte de Los Santos.</span>
         </h2>
         <p className="muted">
-          Pillbox Hill : un emplacement central pour accueillir les citoyens et
-          intervenir au plus près de la ville.
+          Ocean Medical Center : un hôpital à Pacific Bluffs, près de la plage, pour accueillir les citoyens et
+          intervenir sur la côte comme en ville.
         </p>
       </div>
       <div className="hospital-layout">
@@ -572,11 +572,11 @@ function Hospital() {
             }
           >
             {visible ? (
-              <PillboxMap />
+              <HospitalMap />
             ) : (
               <div className="map-placeholder">
                 <MapPin />
-                <span>Pillbox Hill · Carte satellite</span>
+                <span>Ocean Medical Center · Carte satellite</span>
               </div>
             )}
           </Suspense>
@@ -585,15 +585,15 @@ function Hospital() {
           <button
             ref={photoButton}
             className="hospital-photo"
-            aria-label="Agrandir la capture de Pillbox Hill"
+            aria-label="Agrandir la capture de Ocean Medical Center"
             onClick={() => setPhotoOpen(true)}
           >
             <img
-              src="/assets/hospital.png"
-              alt="Façade du Pillbox Hill Medical Center dans GTA V"
+              src="/assets/ocean-medical-center.jpeg"
+              alt="Façade du Ocean Medical Center dans GTA V"
               loading="lazy"
-              width="960"
-              height="536"
+              width="3440"
+              height="1440"
             />
             <span>
               <Expand size={17} />
@@ -604,15 +604,11 @@ function Hospital() {
               <MapPin size={12} />
               ÉTABLISSEMENT ACTUEL
             </span>
-            <h3>
-              Pillbox Hill
-              <br />
-              Medical Center
-            </h3>
+            <h3>{candidature.hopital.nom}</h3>
             <p>
-              Elgin Avenue · Los Santos
+              {candidature.hopital.adresse}
               <br />
-              San Andreas
+              {candidature.hopital.quartier} · San Andreas
             </p>
             <a
               href={candidature.hopital.lien}
@@ -658,9 +654,9 @@ function Hospital() {
         >
           <X />
         </button>
-        <img src="/assets/hospital.png" alt="Vue agrandie de Pillbox Hill" />
+        <img src="/assets/ocean-medical-center.jpeg" alt="Vue agrandie de Ocean Medical Center" />
         <div>
-          <h3 id="photo-title">Pillbox Hill Medical Center</h3>
+          <h3 id="photo-title">Ocean Medical Center</h3>
           <p>GTA V / Rockstar Games · Capture de référence</p>
         </div>
       </dialog>
@@ -862,25 +858,25 @@ function Future() {
         <div className="oceanic-inner">
           <span className="pill">
             <span className="status-dot" />
-            L’ÉVOLUTION PROPOSEE
+            CONTINUER À GRANDIR
           </span>
           <div className="oceanic-layout">
             <div>
               <span className="overline">LOS SANTOS · CÔTÉ OCÉAN</span>
               <h3>
-                Prochain arrêt.
+                Un hôpital.
                 <br />
-                <span>Ocean.</span>
+                <span>De nouveaux horizons.</span>
                 <ArrowUpRight aria-hidden="true" />
               </h3>
             </div>
             <div>
               <p>
-                Un nouvel hôpital proche de la plage. De nouvelles possibilités
+                Un hôpital proche de la plage. De nouvelles possibilités
                 de scènes. Un projet qui grandit avec son équipe.
               </p>
               <p>
-                Cette évolution sera préparée après stabilisation du service,
+                Le développement de nouvelles spécialités sera préparé après stabilisation du service,
                 selon les moyens et le mapping disponibles, et avec l’accord du
                 staff d’Alynia RP.
               </p>
@@ -939,43 +935,10 @@ function Footer() {
               >
                 HDQWalls
               </a>
-              ,{" "}
-              <a
-                href="https://gta.fandom.com/wiki/Pillbox_Hill_Medical_Center"
-                target="_blank"
-                rel="noreferrer"
-              >
-                GTA Wiki
-              </a>{" "}
-              (capture via{" "}
-              <a
-                href="https://lastlandrp.wixsite.com/lastland/lsmc"
-                target="_blank"
-                rel="noreferrer"
-              >
-                miroir
-              </a>
-              ).
+
+              . Photo de l’Ocean Medical Center et carte satellite fournies par le porteur du projet.
             </p>
-            <p>
-              Relief GTA V :{" "}
-              <a
-                href="https://github.com/Andreas1331/ragemp-gtav-heightmap"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Andreas1331 (MIT)
-              </a>
-              . Localisation de Pillbox :{" "}
-              <a
-                href="https://github.com/qbcore-framework/qb-ambulancejob/blob/main/config.lua"
-                target="_blank"
-                rel="noreferrer"
-              >
-                QBCore
-              </a>
-              .
-            </p>
+            <p>Adresse de référence : Playa Vista, Pacific Bluffs, Los Santos.</p>
           </div>
         </details>
       </div>
